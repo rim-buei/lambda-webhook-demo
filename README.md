@@ -10,7 +10,7 @@ $ cp ./target/x86_64-unknown-linux-musl/release/lambda-webhook ./bootstrap && zi
 
 Then, create a Lambda function using the AWS CLI:
 ```sh
-$ aws lambda create-function --function-name rust-test \
+$ aws lambda create-function --function-name rust-github-webhooks \
   --handler index.handler \
   --zip-file fileb://lambda.zip \
   --runtime provided \
@@ -22,7 +22,7 @@ $ aws lambda create-function --function-name rust-test \
 You can test the function using the AWS CLI:
 ```sh
 $ aws lambda invoke \
-  --function-name rust-test \
+  --function-name rust-github-webhooks \
   --payload '{"first_name": "world"}' \
   output.json
 $ cat output.json
