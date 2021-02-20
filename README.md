@@ -1,4 +1,4 @@
-# lambda-webhook
+# lambda-webhook-demo
 A small Rust program to handle GitHub webhooks using AWS Lambda and API Gateway
 
 ## How to Deploy
@@ -23,10 +23,10 @@ Now you can test the function using the AWS CLI:
 ```sh
 $ aws lambda invoke \
   --function-name rust-github-webhooks \
-  --payload '{"first_name": "world"}' \
+  --payload '{"body": "{\"action\": \"opened\"}"}' \
   output.json
 $ cat output.json
 ```
 
 ## Reference
-- [`lambda_runtime` crate [crates.io]](https://crates.io/crates/lambda_runtime)
+- [`lambda_runtime` crate](https://crates.io/crates/lambda_runtime) [crates.io]
