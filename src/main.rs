@@ -1,9 +1,11 @@
-use std::error::Error;
+mod github;
 
+use github::handle_webhook;
 use lambda_runtime::{error::HandlerError, lambda, Context};
-use log;
 use serde::{Deserialize, Serialize};
+use simple_error::bail;
 use simple_logger::SimpleLogger;
+use std::error::Error;
 
 #[derive(Debug, Deserialize)]
 struct ProxyRequest {
@@ -18,44 +20,26 @@ struct ProxyResponse {
     body: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct WebhookEvent {
-    action: String,
-    pull_request: PullRequestEvent,
-}
-
-#[derive(Debug, Deserialize)]
-struct PullRequestEvent {
-    merged: bool,
-    milestone: Option<u64>,
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
     SimpleLogger::new().init().unwrap();
-    lambda!(handle_proxy_event);
+    lambda!(handle_proxy_request);
 
     Ok(())
 }
 
-fn handle_proxy_event(e: ProxyRequest, c: Context) -> Result<ProxyResponse, HandlerError> {
-    handle_event(serde_json::from_str(&e.body).unwrap(), c)
-}
-
-fn handle_event(e: WebhookEvent, c: Context) -> Result<ProxyResponse, HandlerError> {
-    if e.action != "closed" && !e.pull_request.merged {
-        log::info!(
-            "Ignorering webhook event: event={:?} request_id={}",
-            e,
-            c.aws_request_id
-        );
-        return Ok(ProxyResponse {
+fn handle_proxy_request(r: ProxyRequest, c: Context) -> Result<ProxyResponse, HandlerError> {
+    match handle_webhook(serde_json::from_str(&r.body).unwrap()) {
+        Ok(_) => Ok(ProxyResponse {
             status_code: 200,
-            body: format!("Webhook event has been ignored: event={:?}", e),
-        });
+            body: format!(
+                "Webhook event has been successfully processed: req_id={} req={:?}",
+                c.aws_request_id, r
+            ),
+        }),
+        Err(s) => bail!(format!(
+            "Failed to process webhook event: reason={} req_id={} req={:?}",
+            s, c.aws_request_id, r
+        )
+        .as_str()),
     }
-
-    Ok(ProxyResponse {
-        status_code: 200,
-        body: format!("PR has been closed: event={:?}", e),
-    })
 }

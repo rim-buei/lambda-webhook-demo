@@ -4,11 +4,11 @@ version = "0.1.0"
 authors = ["Rim <rim.buei@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+http = "0.2.3"
 lambda_runtime = "0.2.1"
 log = "^0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+simple-error = "0.2.1"
 simple_logger = "1.6.0"
