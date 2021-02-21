@@ -20,7 +20,7 @@ struct Repository {
 
 pub fn handle(e: WebhookEvent) -> Result<()> {
     if e.action != "closed" || e.pull_request.is_none() {
-        log::info!("Ignoring a webhook event: event='{:?}'", e);
+        log::info!("Ignoring webhook event: event='{:?}'", e);
         return Ok(());
     }
 
@@ -47,16 +47,16 @@ struct Milestone {
 }
 
 /**
- * This handler function automatically assign the latest milestone to a pull
+ * This handler function automatically assigns the latest milestone to a pull
  * request when it is merged into the default branch. Environment variable
  * GITHUB_API_ENDPOINT and GITHUB_ACCESS_TOKEN must be set.
  */
 fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
     if !pr.merged || pr.milestone.is_some() || pr.base.reference != repo.default_branch {
-        log::info!("Ignoring a webhook event: type=pull_request, pr={:?}", pr);
+        log::info!("Ignoring webhook event: type=pull_request, pr={:?}", pr);
         return Ok(());
     }
-    log::info!("Handling a webhook event for a pull request: pr={:?}", pr);
+    log::info!("Handling webhook event for a pull request: pr={:?}", pr);
 
     let endpoint = env::var("GITHUB_API_ENDPOINT")?;
     let token = env::var("GITHUB_ACCESS_TOKEN")?;
@@ -65,7 +65,7 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
     let milestones: Vec<Milestone> = {
         let url = format!("/repos/{}/milestones?direction=desc", repo.full_name);
 
-        log::info!("Sending a GET request to GitHub: url={}", url);
+        log::info!("Sending GET request to GitHub: url={}", url);
         let resp = &client.get(url)?;
         log::info!("Retrieved response: {:?}", resp);
 
@@ -81,7 +81,7 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
         let url = format!("/repos/{}/issues/{}", repo.full_name, pr.number);
         let body = json!({ "milestone": milestone });
 
-        log::info!("Sending a PATCH request to GitHub: url={}", url);
+        log::info!("Sending PATCH request to GitHub: url={}", url);
         let resp = &client.patch(url, body)?;
         log::info!("Retrieved response: {:?}", resp);
     }
