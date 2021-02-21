@@ -52,7 +52,7 @@ struct Milestone {
 /**
  * This handler function automatically assigns the latest milestone to a pull
  * request when it is merged into the default branch. Environment variable
- * GITHUB_API_ENDPOINT and GITHUB_ACCESS_TOKEN must be set.
+ * GITHUB_API_ENDPOINT and GITHUB_ACCESS_TOKEN must be set in Lambda.
  */
 fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
     if !pr.merged || pr.milestone.is_some() || pr.base.reference != repo.default_branch {
@@ -66,10 +66,10 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
     let client = Client::new(endpoint, token);
 
     let milestones: Vec<Milestone> = {
-        let url = format!("/repos/{}/milestones?direction=desc", repo.full_name);
+        let path = format!("/repos/{}/milestones?direction=desc", repo.full_name);
 
-        log::info!("sending GET request to GitHub: url={}", url);
-        let resp = &client.get(url)?;
+        log::info!("sending GET request to GitHub: path={}", path);
+        let resp = &client.get(path)?;
         log::info!("retrieved response: {:?}", resp);
 
         serde_json::from_str(&resp).unwrap()
@@ -81,17 +81,21 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
 
     let milestone = milestones[0].number;
     {
-        let url = format!("/repos/{}/issues/{}", repo.full_name, pr.number);
+        let path = format!("/repos/{}/issues/{}", repo.full_name, pr.number);
         let body = json!({ "milestone": milestone });
 
-        log::info!("sending PATCH request to GitHub: url={}", url);
-        let resp = &client.patch(url, body)?;
+        log::info!("sending PATCH request to GitHub: path={}", path);
+        let resp = &client.patch(path, body)?;
         log::info!("retrieved response: {:?}", resp);
     }
 
     Ok(())
 }
 
+/**
+ * This function verifies request body using a secret key string. The secret key
+ * string must be configured in both GitHub webhook and Lambda environment variable.
+ */
 pub fn verify_request(headers: &HashMap<String, String>, body: &String) -> Result<()> {
     if headers.get("X-Hub-Signature-256").is_none() {
         bail!("X-Hub-Signature-256 header not found");
