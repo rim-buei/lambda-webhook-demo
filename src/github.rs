@@ -1,5 +1,6 @@
 use reqwest;
 use reqwest::header;
+use serde::Serialize;
 
 pub struct Client {
     endpoint: String,
@@ -22,6 +23,23 @@ impl Client {
             .header(header::ACCEPT, "application/vnd.github.v3+json")
             .header(header::AUTHORIZATION, self.get_token_header())
             .header(header::USER_AGENT, "rust")
+            .send()
+            .unwrap()
+            .text()
+    }
+
+    pub fn patch<T>(&self, path: String, body: T) -> Result<String, reqwest::Error>
+    where
+        T: Serialize,
+    {
+        let url = format!("{}{}", self.endpoint, path);
+        let client = reqwest::blocking::Client::new();
+        client
+            .patch(&url)
+            .header(header::ACCEPT, "application/vnd.github.v3+json")
+            .header(header::AUTHORIZATION, self.get_token_header())
+            .header(header::USER_AGENT, "rust")
+            .json(&body)
             .send()
             .unwrap()
             .text()
