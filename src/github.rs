@@ -1,22 +1,33 @@
-use serde::Deserialize;
+use reqwest;
+use reqwest::header;
 
-#[derive(Debug, Deserialize)]
-pub struct WebhookEvent {
-    action: String,
-    pull_request: Option<PullRequestEvent>,
+pub struct Client {
+    endpoint: String,
+    token: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct PullRequestEvent {
-    merged: bool,
-    milestone: Option<u64>,
-}
-
-pub fn handle_webhook(e: WebhookEvent) -> Result<(), String> {
-    if e.action != "closed" || e.pull_request.is_none() {
-        log::info!("Ignoring webhook event: event={:?}", e);
-        return Ok(());
+impl Client {
+    pub fn new(endpoint: String, token: String) -> Self {
+        Client {
+            endpoint: endpoint,
+            token: token,
+        }
     }
 
-    Ok(())
+    pub fn get(&self, path: String) -> Result<String, reqwest::Error> {
+        let url = format!("{}{}", self.endpoint, path);
+        let client = reqwest::blocking::Client::new();
+        client
+            .get(&url)
+            .header(header::ACCEPT, "application/vnd.github.v3+json")
+            .header(header::AUTHORIZATION, self.get_token_header())
+            .header(header::USER_AGENT, "rust")
+            .send()
+            .unwrap()
+            .text()
+    }
+
+    fn get_token_header(&self) -> String {
+        format!("token {}", self.token)
+    }
 }

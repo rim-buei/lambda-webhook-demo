@@ -1,6 +1,6 @@
 mod github;
+mod webhook;
 
-use github::handle_webhook;
 use lambda_runtime::{error::HandlerError, lambda, Context};
 use serde::{Deserialize, Serialize};
 use simple_error::bail;
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn handle_proxy_request(r: ProxyRequest, c: Context) -> Result<ProxyResponse, HandlerError> {
-    match handle_webhook(serde_json::from_str(&r.body).unwrap()) {
+    match webhook::handle(serde_json::from_str(&r.body).unwrap()) {
         Ok(_) => Ok(ProxyResponse {
             status_code: 200,
             body: format!(
@@ -36,9 +36,9 @@ fn handle_proxy_request(r: ProxyRequest, c: Context) -> Result<ProxyResponse, Ha
                 c.aws_request_id, r
             ),
         }),
-        Err(s) => bail!(format!(
+        Err(e) => bail!(format!(
             "Failed to process webhook event: reason={} req_id={} req={:?}",
-            s, c.aws_request_id, r
+            e, c.aws_request_id, r
         )
         .as_str()),
     }
