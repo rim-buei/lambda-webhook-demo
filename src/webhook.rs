@@ -1,7 +1,10 @@
 use crate::github::Client;
-use anyhow::Result;
+use anyhow::{bail, Result};
+use hex;
+use ring::hmac;
 use serde::Deserialize;
 use serde_json::json;
+use std::collections::HashMap;
 use std::env;
 
 #[derive(Debug, Deserialize)]
@@ -18,9 +21,9 @@ struct Repository {
     default_branch: String,
 }
 
-pub fn handle(e: WebhookEvent) -> Result<()> {
+pub fn handle_request(e: WebhookEvent) -> Result<()> {
     if e.action != "closed" || e.pull_request.is_none() {
-        log::info!("Ignoring webhook event: event='{:?}'", e);
+        log::info!("ignoring webhook event: event={:?}", e);
         return Ok(());
     }
 
@@ -53,10 +56,10 @@ struct Milestone {
  */
 fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
     if !pr.merged || pr.milestone.is_some() || pr.base.reference != repo.default_branch {
-        log::info!("Ignoring webhook event: type=pull_request, pr={:?}", pr);
+        log::info!("ignoring webhook event: type=pull_request pr={:?}", pr);
         return Ok(());
     }
-    log::info!("Handling webhook event for a pull request: pr={:?}", pr);
+    log::info!("handling webhook event for a pull request: pr={:?}", pr);
 
     let endpoint = env::var("GITHUB_API_ENDPOINT")?;
     let token = env::var("GITHUB_ACCESS_TOKEN")?;
@@ -65,14 +68,14 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
     let milestones: Vec<Milestone> = {
         let url = format!("/repos/{}/milestones?direction=desc", repo.full_name);
 
-        log::info!("Sending GET request to GitHub: url={}", url);
+        log::info!("sending GET request to GitHub: url={}", url);
         let resp = &client.get(url)?;
-        log::info!("Retrieved response: {:?}", resp);
+        log::info!("retrieved response: {:?}", resp);
 
         serde_json::from_str(&resp).unwrap()
     };
     if milestones.len() == 0 {
-        log::info!("Milestone is not found: pr={:?}", pr);
+        log::info!("milestone is not found: pr={:?}", pr);
         return Ok(());
     }
 
@@ -81,9 +84,30 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
         let url = format!("/repos/{}/issues/{}", repo.full_name, pr.number);
         let body = json!({ "milestone": milestone });
 
-        log::info!("Sending PATCH request to GitHub: url={}", url);
+        log::info!("sending PATCH request to GitHub: url={}", url);
         let resp = &client.patch(url, body)?;
-        log::info!("Retrieved response: {:?}", resp);
+        log::info!("retrieved response: {:?}", resp);
+    }
+
+    Ok(())
+}
+
+pub fn verify_request(headers: &HashMap<String, String>, body: &String) -> Result<()> {
+    if headers.get("X-Hub-Signature-256").is_none() {
+        bail!("X-Hub-Signature-256 header not found");
+    }
+    let git_sig = headers.get("X-Hub-Signature-256").unwrap();
+
+    log::info!("verifying request body from GitHub: body={}", body);
+    let secret = env::var("GITHUB_WEBHOOK_SECRET").unwrap();
+    let key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_ref());
+    let my_sig = format!(
+        "sha256={}",
+        hex::encode(hmac::sign(&key, body.as_bytes()).as_ref())
+    );
+
+    if *git_sig != my_sig {
+        bail!("invalid request body");
     }
 
     Ok(())
