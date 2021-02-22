@@ -1,4 +1,6 @@
 # lambda-webhook-demo
+[![CI](https://github.com/rim-buei/lambda-webhook-demo/workflows/CI/badge.svg)](https://github.com/rim-buei/lambda-webhook-demo/actions)
+
 A small Rust program to handle GitHub webhooks using AWS Lambda and API Gateway
 
 ## How to Deploy
