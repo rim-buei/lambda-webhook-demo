@@ -3,9 +3,13 @@
 
 A small Rust program to handle GitHub webhooks using AWS Lambda and API Gateway
 
-## How to Deploy
-To deploy the webhooks handler as a Lambda function using the AWS CLI, you first need to build a deployment package (`lambda.zip`):
+## Requirement
+- `musl-tools`
+
+## Deployment
+To deploy the webhooks handler as a Lambda function using the AWS CLI, you first need to add `x86_64-unknown-linux-musl` target in your build environment and build a deployment package (`lambda.zip`):
 ```sh
+$ rustup target add x86_64-unknown-linux-musl
 $ cargo build --release --target x86_64-unknown-linux-musl --features vendored
 $ cp ./target/x86_64-unknown-linux-musl/release/lambda-webhook ./bootstrap && zip lambda.zip bootstrap && rm bootstrap
 ```
