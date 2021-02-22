@@ -99,7 +99,7 @@ pub fn verify_request(headers: &HashMap<String, String>, body: &str) -> Result<(
     if headers.get("X-Hub-Signature-256").is_none() {
         bail!("X-Hub-Signature-256 header not found");
     }
-    let git_sig = headers.get("X-Hub-Signature-256").unwrap();
+    let gh_sig = headers.get("X-Hub-Signature-256").unwrap();
 
     log::info!("verifying request body from GitHub: body={}", body);
     let secret = env::var("GITHUB_WEBHOOK_SECRET").unwrap();
@@ -109,7 +109,7 @@ pub fn verify_request(headers: &HashMap<String, String>, body: &str) -> Result<(
         hex::encode(hmac::sign(&key, body.as_bytes()).as_ref())
     );
 
-    if *git_sig != my_sig {
+    if *gh_sig != my_sig {
         bail!("invalid request body");
     }
 
