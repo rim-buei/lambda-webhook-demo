@@ -1,6 +1,5 @@
 use crate::github::Client;
 use anyhow::{bail, Result};
-use hex;
 use ring::hmac;
 use serde::Deserialize;
 use serde_json::json;
@@ -74,7 +73,7 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
 
         serde_json::from_str(&resp).unwrap()
     };
-    if milestones.len() == 0 {
+    if milestones.is_empty() {
         log::info!("milestone is not found: pr={:?}", pr);
         return Ok(());
     }
@@ -96,7 +95,7 @@ fn handle_pull_request(repo: Repository, pr: PullRequest) -> Result<()> {
  * This function verifies request body using a secret key string. The secret key
  * string must be configured in both GitHub webhook and Lambda environment variable.
  */
-pub fn verify_request(headers: &HashMap<String, String>, body: &String) -> Result<()> {
+pub fn verify_request(headers: &HashMap<String, String>, body: &str) -> Result<()> {
     if headers.get("X-Hub-Signature-256").is_none() {
         bail!("X-Hub-Signature-256 header not found");
     }

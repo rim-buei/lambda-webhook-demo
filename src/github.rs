@@ -1,4 +1,3 @@
-use reqwest;
 use reqwest::header;
 use serde::Serialize;
 
@@ -9,10 +8,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(endpoint: String, token: String) -> Self {
-        Client {
-            endpoint: endpoint,
-            token: token,
-        }
+        Client { endpoint, token }
     }
 
     pub fn get(&self, path: String) -> Result<String, reqwest::Error> {

@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use simple_error::bail;
 use simple_logger::SimpleLogger;
 use std::collections::HashMap;
-use std::error::Error;
 
 #[derive(Debug, Deserialize)]
 struct ProxyRequest {
@@ -22,11 +21,9 @@ struct ProxyResponse {
     body: String,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     SimpleLogger::new().init().unwrap();
     lambda!(handle_proxy_request);
-
-    Ok(())
 }
 
 fn handle_proxy_request(r: ProxyRequest, c: Context) -> Result<ProxyResponse, HandlerError> {
