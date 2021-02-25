@@ -33,7 +33,7 @@ pub fn handle_request(e: WebhookEvent) -> Result<()> {
 struct PullRequest {
     number: u64,
     merged: bool,
-    milestone: Option<u64>,
+    milestone: Option<Milestone>,
     base: Branch,
 }
 
