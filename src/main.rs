@@ -1,7 +1,8 @@
 mod github;
 mod webhook;
 
-use lambda_runtime::{error::HandlerError, lambda, Context};
+use lambda_runtime::{handler_fn, Context, Error};
+use log::LevelFilter;
 use serde::{Deserialize, Serialize};
 use simple_error::bail;
 use simple_logger::SimpleLogger;
@@ -21,18 +22,28 @@ struct ProxyResponse {
     body: String,
 }
 
-fn main() {
-    SimpleLogger::new().init().unwrap();
-    lambda!(handle_proxy_request);
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    SimpleLogger::new()
+        .with_level(LevelFilter::Info)
+        .init()
+        .unwrap();
+
+    let func = handler_fn(handle_proxy_request);
+    lambda_runtime::run(func).await?;
+    Ok(())
 }
 
-fn handle_proxy_request(r: ProxyRequest, c: Context) -> Result<ProxyResponse, HandlerError> {
+pub(crate) async fn handle_proxy_request(
+    r: ProxyRequest,
+    c: Context,
+) -> Result<ProxyResponse, Error> {
     if let Err(e) = webhook::verify_request(&r.headers, &r.body) {
         return Ok(ProxyResponse {
             status_code: 403,
             body: format!(
                 "your request could not be processed: reason={} req_id={} req={:?}",
-                e, c.aws_request_id, r
+                e, c.request_id, r
             ),
         });
     }
@@ -42,12 +53,12 @@ fn handle_proxy_request(r: ProxyRequest, c: Context) -> Result<ProxyResponse, Ha
             status_code: 200,
             body: format!(
                 "webhook event has been successfully processed: req_id={} req={:?}",
-                c.aws_request_id, r
+                c.request_id, r
             ),
         }),
         Err(e) => bail!(format!(
             "failed to process webhook event: reason={} req_id={} req={:?}",
-            e, c.aws_request_id, r
+            e, c.request_id, r
         )
         .as_str()),
     }

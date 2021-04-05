@@ -1,6 +1,6 @@
 [package]
 name = "lambda-webhook"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Rim <rim.buei@gmail.com>"]
 edition = "2018"
 
@@ -17,6 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 simple-error = "0.2.3"
 simple_logger = "1.11.0"
+tokio = { version = "1.0", features = ["rt-multi-thread"] }
 
 [features]
 vendored = ["openssl-sys/vendored"]
