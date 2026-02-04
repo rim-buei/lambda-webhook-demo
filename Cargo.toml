@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.71"
 hex = "0.4.3"
-http = "0.2.9"
+http = "1.0.0"
 lambda_runtime = "0.14.0"
 log = "^0.4.19"
 openssl-sys = "*"
